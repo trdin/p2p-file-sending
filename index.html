@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<script src="/socket.io/socket.io.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+
+<head>
+    <title>TCP chat</title>
+    <style>
+        body {
+            background: #000;
+            background-image: url("https://thumbs.gfycat.com/ExemplaryBelovedEuropeanfiresalamander-size_restricted.gif");
+            background-size: cover;
+            height: 100vh !important;
+            padding: 0;
+            margin: 0 !important;
+
+        }
+
+        #message-container {
+            overflow: auto;
+            height: 200px !important;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        #input {
+            padding: 1rem;
+            margin-top: 5px;
+        }
+
+        p {
+            font-family: Consolas, monaco, monospace;
+            font-size: 14px;
+            font-style: normal;
+            font-variant: normal;
+            font-weight: bold;
+            line-height: 20px;
+        }
+
+        .heker {
+            color: rgb(1, 105, 1);
+            background: #000;
+            font-weight: bold;
+        }
+
+        .chat-box {
+            margin-top: 30px !important;
+            background: rgb(51, 51, 51);
+            padding: 30px;
+        }
+
+        a:link {
+            color: black !important;
+            text-decoration: none;
+        }
+
+        @media only screen and (max-width : 768px) {
+            #message-container {
+                height: 200px !important;
+            }
+
+            .chat-box {
+                margin-top: 30px;
+                background: rgb(51, 51, 51);
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container chat-box">
+        <div class="row">
+            <div class="col-sm-8 ">
+                <div id="message-container" class="overflow-auto heker">
+                    <ul id="messages" class="p-3 mb-2 heker">
+
+                    </ul>
+                </div>
+                <form id="form1" action="" class="mb-3">
+                    <input id="input" class="heker"><button id="connect" class="btn btn-dark">Connect</button><button
+                        id="disconnect" class="btn btn-dark">Disconnect</button>
+                </form>
+                <form id="form">
+                    <input type="file" id="file" class="form-control bg-dark" multiple />
+                    <input type="submit" class="btn btn-dark" value="Upload" />
+                </form>
+            </div>
+            <div class="col-sm-4">
+                <div class="container" id="down-btn"></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12">
+                <div id="dowload-link">
+                </div>
+            </div>
+        </div>
+</body>
+<script src="socket.io.js"></script>
+<script src="socket.io-file-client.js"></script>
+<script>
+    var key = "peter";
+
+    $(document).ready(function () {
+        $("#disconnect").hide();
+        function encript(string) {
+            return CryptoJS.TripleDES.encrypt(string, key).toString();
+        }
+        function decript(string) {
+            return CryptoJS.TripleDES.decrypt(string, key).toString(CryptoJS.enc.Utf8);
+        }
+        var socket = io();
+        ///let socket = undefined;
+        var input = document.getElementById('input');
+
+
+        $("#connect").click(function (e) {
+            e.preventDefault();
+            if (input.value) {
+                socket.emit('p2p', input.value);
+                //input.value = '';
+                $('#input').prop('disabled', true);
+                $("#connect").hide()
+                $("#disconnect").show();
+            }
+        });
+
+        $("#input").keyup(function (e) {
+            if (e.keyCode === 13) {
+                $("#connect").click();
+            }
+        });
+
+        $("#disconnect").click(function (e) {
+            e.preventDefault();
+            socket.emit("disconnect_p2p");
+            $("#disconnect").hide()
+            $("#connect").show();
+            input.value = '';
+            $('#input').prop('disabled', false);
+        });
+
+        socket.on('message', function (msg) {
+            msg = msg
+            var item = document.createElement('li');
+            text = "<p>" + msg + "</p>";
+            item.innerHTML = text
+            messages.appendChild(item);
+        });
+
+        /*socket.on("dowload", (package) => {
+            console.log("a button should be here---------------------------------");
+            $('#down-btn').append("<p><button id='prd' data-socket_id='" + package.socket_id + "' data-filename='" + package.filename + "' data-link='" + package.link + "' type='button' class='button download-data'>Download " + package.filename + "</button></p>");
+
+            /*$(".download-data").click(function () {
+                var data = this.dataset
+                console.log(data);
+                socket.emit("dowload-command", data);
+            })
+    });*/
+
+        socket.on("dowload-link", (package) => {
+            $("#down-btn").append('<p><button type="button" class="btn btn-success" width="100%"><a href="' + package.link + '" color="black" download>Prenesite ' + package.name + '</a></button></p>');
+        });
+
+        /*$("#download-data").click(function () {
+            var data = $(this).dataset
+            console.log(data);
+            //socket.emit("dowload",)
+        })*/
+        //uploading
+        var uploader = new SocketIOFileClient(socket);
+        var form = document.getElementById('form');
+
+        uploader.on('ready', function () {
+            console.log('SocketIOFile ready to go!');
+        });
+        uploader.on('loadstart', function () {
+            console.log('Loading file to browser before sending...');
+        });
+        uploader.on('progress', function (progress) {
+            console.log('Loaded ' + progress.loaded + ' / ' + progress.total);
+        });
+        uploader.on('start', function (fileInfo) {
+            console.log('Start uploading', fileInfo);
+        });
+        uploader.on('stream', function (fileInfo) {
+            console.log('Streaming... sent ' + fileInfo.sent + ' bytes.');
+        });
+        uploader.on('complete', function (fileInfo) {
+            console.log('Upload Complete', fileInfo);
+        });
+        uploader.on('error', function (err) {
+            console.log('Error!', err);
+        });
+        uploader.on('abort', function (fileInfo) {
+            console.log('Aborted: ', fileInfo);
+        });
+
+        form.onsubmit = function (ev) {
+            ev.preventDefault();
+
+            // Send File Element to upload
+            var fileEl = document.getElementById('file');
+            // var uploadIds = uploader.upload(fileEl);
+
+            // Or just pass file objects directly
+            var uploadIds = uploader.upload(fileEl.files);
+        };
+
+    });
+</script>
+
+</html>
